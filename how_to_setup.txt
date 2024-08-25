@@ -1,0 +1,45 @@
+sudo apt update && sudo apt upgrade -y 
+sudo apt install snapd
+sudo snap install nextcloud
+#Verify that Nextcloud is installed successfully
+sudo snap list
+#Open firewall
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw reload
+#port forward 80 and 443 from the router
+#Setup user by http://raspberrypi_ip
+
+#Mount usb hardddisk
+sudo fisk -l 
+#Retrieve the device usually /dev/sda1
+sudo mkdir /mnt/usbdrive
+sudo mount /dev/sda1 /mnt/usbdrive
+#Get the uuid of the usb harddrive
+sudo blkid /dev/sda1
+#Modify the below file so that upon reboot the usbdrive will be mounted automatically
+sudo nano /etc/fstab
+UUID=cdc7ebe0-0973-4d14-b310-3048f6d22eb4 /mnt/usbdrive btrfs defaults 0 2
+sudo mount -a
+sudo reboot #To test if the usbdrive is still mounted upon reboot
+
+#To get the nextcloud data mapped over to usb harddrive so that they are not saved in the raspberry pi's micro sd card, first check that the below location exists
+ls -la /var/snap/nextcloud/common/nextcloud/data
+#Then find a location on the usb harddrive where there is not yet created a data folder. Create a symlink from the location above to the usb harddrive
+sudo cp -a /var/snap/nextcloud/common/nextcloud/data/. /mnt/usbdrive/ncdata/JianWu/data
+#Edit the datadirectory in the config.php to point to the new mounted path
+sudo nano /var/snap/nextcloud/43563/nextcloud/config/config.php
+'datadirectory' => '/mnt/usbdrive/ncdata/JianWu/data'
+#make sure that the removeable media can be detected by nextcloud
+sudo snap connect nextcloud:removable-media
+sudo snap restart nextcloud
+#Enable external storage and map it to the usb harddrive. Do a test image upload and check that the image actually is uploaded in the usb harddrive
+
+#Edit configuration file so that Nextcloud can be accessed by the domain
+sudo nano /var/snap/nextcloud/current/nextcloud/config/config.php
+'trusted_domains' =>
+     array (
+        0 => 'cloud.dimsum.dk',
+      ),
+#Setup let's encrypt
+sudo nextcloud.enable-https lets-encrypt
